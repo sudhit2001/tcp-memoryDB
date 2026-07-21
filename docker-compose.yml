@@ -1,0 +1,8 @@
+services:
+  tcp:
+    build: .
+    container_name: tcp-learning
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/app
