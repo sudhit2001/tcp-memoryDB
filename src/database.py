@@ -29,5 +29,11 @@ class KeyValueStore:
         with self.lock:
             return key in self.db
 
+    def load(self, data):
+        self.db = data
+
+    def dump(self):
+        return self.db
+
 store = KeyValueStore()
 

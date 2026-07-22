@@ -3,12 +3,33 @@ import threading
 from protocol.codec import decode, encode
 from protocol.parser import parse
 from executor import execute
+from storage.wal import recover
+from storage.snapshot import load_snapshot
+from database import store
 HOST = "0.0.0.0"
 PORT = 5000
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
 server.listen(5)
+
+print("Loading snapshot...")
+
+snapshot = load_snapshot()
+
+store.load(snapshot)
+
+print("Snapshot loaded.")
+
+print("Recovering database...")
+
+commands = recover()
+
+for message in commands:
+    command = parse(message)
+    execute(command, recovery=True)
+
+print("Recovery complete.")
 
 print("Waiting for clients...")
 
