@@ -1,8 +1,53 @@
 services:
-  tcp:
+  primary:
     build: .
-    container_name: tcp-learning
+    container_name: primary
     stdin_open: true
     tty: true
+    environment:
+      ROLE: primary
+      NODE_ID: 1
+      PORT: 5000
+      REPLICAS: replica1:5001,replica2:5002
+    ports:
+      - "5000:5000"
     volumes:
       - .:/app
+      - primary_data:/data
+
+  replica1:
+    build: .
+    container_name: replica1
+    stdin_open: true
+    tty: true
+    environment:
+      ROLE: replica
+      NODE_ID: 2
+      PORT: 5001
+      REPLICAS: replica2:5002
+    ports:
+      - "5001:5001"
+    volumes:
+      - .:/app
+      - replica1_data:/data
+
+  replica2:
+    build: .
+    container_name: replica2
+    stdin_open: true
+    tty: true
+    environment:
+      ROLE: replica
+      NODE_ID: 3
+      PORT: 5002
+      REPLICAS: replica1:5001
+    ports:
+      - "5002:5002"
+    volumes:
+      - .:/app
+      - replica2_data:/data
+
+volumes:
+  primary_data:
+  replica1_data:
+  replica2_data:

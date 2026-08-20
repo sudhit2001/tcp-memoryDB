@@ -1,7 +1,7 @@
 import json
 import os
 
-SNAPSHOT_FILE = "snapshot.json"
+SNAPSHOT_FILE = "/data/snapshot.json"
 
 
 def save_snapshot(db):

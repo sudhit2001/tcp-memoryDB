@@ -1,11 +1,13 @@
 from database import store
 from storage.wal import append
 from storage.snapshot import save_snapshot
+from replication.client import replicate
+
 import os
 write_count = 0
 SNAPSHOT_INTERVAL = 5
 
-def execute(command, recovery=False):
+def execute(command, recovery=False, replicate_to_replicas=False):
     global write_count
     if command.cmd == "SET":
 
@@ -13,13 +15,15 @@ def execute(command, recovery=False):
             append(f"SET {command.key} {command.value}")
 
         store.set(command.key, command.value)
+        if replicate_to_replicas:    
+            replicate(f"SET {command.key} {command.value}")
 
         write_count += 1
 
         if write_count >= SNAPSHOT_INTERVAL:
             save_snapshot(store.dump())
 
-            open("wal.log", "w").close()
+            open("/data/wal.log", "w").close()
 
             write_count = 0
 
@@ -35,13 +39,15 @@ def execute(command, recovery=False):
             append(f"DEL {command.key}")
 
         deleted = store.delete(command.key)
-        
+        if replicate_to_replicas:    
+            replicate(f"DEL {command.key}")
+
         write_count += 1
 
         if write_count >= SNAPSHOT_INTERVAL:
             save_snapshot(store.dump())
 
-            open("wal.log", "w").close()
+            open("/data/wal.log", "w").close()
 
             write_count = 0
 

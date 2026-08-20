@@ -6,8 +6,18 @@ from executor import execute
 from storage.wal import recover
 from storage.snapshot import load_snapshot
 from database import store
+from replication.client import connect_replicas
+from election.sender import start_heartbeat
+from election.watchdog import start_watchdog
+import cluster.state as state
+
+import os
+
+state.ROLE = os.getenv("ROLE", "primary")
+PORT = int(os.getenv("PORT", 5000))
 HOST = "0.0.0.0"
-PORT = 5000
+
+print(f"Starting {state.ROLE} server on port {PORT}")
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
@@ -31,6 +41,12 @@ for message in commands:
 
 print("Recovery complete.")
 
+if state.ROLE == "primary":
+    connect_replicas()
+    start_heartbeat()
+else:
+    start_watchdog()
+
 print("Waiting for clients...")
 
 
@@ -47,12 +63,31 @@ def handle_client(conn, addr):
 
         message = decode(data)
 
+        if message == "HEARTBEAT":
+            from election.heartbeat import received
+
+            received()
+
+            print(
+                f"{threading.current_thread().name}: Heartbeat received"
+            )
+
+            continue
+
+        elif message.startswith("REQUEST_VOTE"):
+
+            from election.election import handle_vote_request
+
+            handle_vote_request(message)
+
+            continue
+
         command = parse(message)
 
         print(f"{threading.current_thread().name}: {command}")
 
-        response = execute(command)
-
+        response = execute(command, replicate_to_replicas=(state.ROLE == "primary"))       
+ 
         conn.sendall(encode(response))
 
     conn.close()

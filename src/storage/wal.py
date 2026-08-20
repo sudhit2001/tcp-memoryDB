@@ -1,6 +1,6 @@
 import os
 
-WAL_FILE = "wal.log"
+WAL_FILE = "/data/wal.log"
 
 
 def append(command):
